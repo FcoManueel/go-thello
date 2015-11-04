@@ -31,9 +31,17 @@ func NewOthello() *Othello {
 func (o Othello) Board() OthelloBoard {
     return o.board
 }
+
 func (o Othello) GetValidMoves() Moves {
-    return Moves{}
+    var validMoves Moves{}
+    for j := 1; j <= o.board.MaxY(); j++ {
+        for i := 1; i <= o.board.MaxX(); i++ {
+            o.getNeighbors(i, j)
+        }
+    }
+    return validMoves
 }
+o.getNeighbors(i, j)
 func (o Othello) IsFinished() bool {
     if len(o.history) >= maxPossibleMoves {
         return true
@@ -65,8 +73,10 @@ func (o *Othello) ApplyMove(playerIndex int, move Move) OthelloBoard {
     if playerIndex != o.currentPlayer {
        return o.board
     }
-    //TODO add move logic here
+    // TODO add move logic here
+    // if there's a score, here should be affected
 
+    o.history = append(o.history, move)
     o.NextPlayer()
     return o.board
 }
