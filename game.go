@@ -14,7 +14,9 @@ type Board interface {
     IsInside(Move) bool
 }
 
-type Player struct{}
+type Player struct{
+    token int8
+}
 
 type Players []Player
 
