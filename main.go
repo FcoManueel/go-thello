@@ -1,7 +1,5 @@
 package main
 
-type Board [][]int8
-
 type Player struct{}
 type Players []Player
 
@@ -12,7 +10,7 @@ type Move struct {
 type Moves []Move
 
 type Game struct {
-    board   [][]int8
+    board   Board
     players Players
     history Moves
 }
