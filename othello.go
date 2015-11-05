@@ -2,6 +2,7 @@ package main
 
 import "fmt"
 
+const debugMode = false
 const (
 	maxPossibleMoves           = 64
 	emptyTile        TileColor = 0
@@ -41,40 +42,51 @@ func (o *Othello) Board() *OthelloBoard {
 func (o *Othello) GetValidMoves(player int) Moves {
 	var validMoves = Moves{}
 	for m := o.board.First(); m != nil; m = o.board.Next() {
-		fmt.Println(m)
-		tileIsOccupied := o.board.Get(*m) != emptyTile
-		if tileIsOccupied {
+		var savedIterator = o.board.iterator
+		if o.PlayerCanCapture(player, *m) {
+			validMoves = append(validMoves, *m)
+		}
+		o.board.iterator = savedIterator
+	}
+	return validMoves
+}
+
+func (o *Othello) PlayerCanCapture(playerIndex int, m Move) bool {
+	var tileIsOccupied = o.board.Get(m) != emptyTile
+	if tileIsOccupied {
+		return false
+	}
+
+	player := o.players[playerIndex]
+	opponent := o.players[(playerIndex+1)%2]
+	neighbors := o.getNeighbors(m, true, opponent.tileColor)
+
+	var move MoveFunction
+	var err error
+
+	for _, n := range neighbors {
+		fmt.Printf("Checking eatability from %s to %s\n", m.String(), n.String())
+		move, err = o.board.GetMoveFunction(m, n)
+		if err != nil {
+			logDebug("Found an error %+v", err.Error())
 			continue
 		}
 
-		opponent := o.players[(player+1)%2]
-		neighbors := o.getNeighbors(*m, true, opponent.tileColor)
-		if len(neighbors) > 0 {
-			validMoves = append(validMoves, *m)
+		var playerCanCapture = true
+		var tile *Move
+		// A player can capture there are opponent tiles in line, followed one of his tiles
+		for tile = move(&m); tile != nil; tile = move(tile) {
+			if o.board.Get(*tile) != opponent.tileColor {
+				logDebug("Found a tile of different color in %s\n\n", tile.String())
+				playerCanCapture = o.board.Get(*tile) == player.tileColor
+				break
+			}
 		}
-		//        for _ = range neighbors {
-		//            if true { //o.canEat(m, neighbors[i]) {
-		//                validMoves = append(validMoves, *m)
-		//                break
-		//            }
+		if tile != nil && playerCanCapture {
+			return true
+		}
 	}
-	//    for j := 1; j <= o.board.MaxY(); j++ {
-	//        for i := 1; i <= o.board.MaxX(); i++ {
-	//            if o.board[j][i] != 0 {
-	//                continue
-	//            }
-	//
-	//            opponentToken := o.players[(o.currentPlayer+1)%2].tileColor
-	//            neighbors := o.getNeighbors(i, j, true, opponentToken)
-	//            for i := range neighbors {
-	//                if o.canEat(Move{X: i, Y: j}, neighbors[i]) {
-	//                    validMoves = append(validMoves, Move{i, j})
-	//                    break
-	//                }
-	//            }
-	//        }
-	//    }
-	return validMoves
+	return false
 }
 
 // getNeighbors return all the surrounding Moves that fall inside the
@@ -92,11 +104,10 @@ func (o *Othello) getNeighbors(m Move, withTile bool, tile TileColor) Moves {
 		Move{m.X + 1, m.Y - 1},
 	}
 	var actualNeighbors = Moves{}
-	for i := range possibleNeighbors {
-		n := &possibleNeighbors[i]
-		if o.board.IsInside(*n) &&
-			(!withTile || o.board.Get(*n) == tile) {
-			actualNeighbors = append(actualNeighbors, *n)
+	for _, n := range possibleNeighbors {
+		if o.board.IsInside(n) &&
+			(!withTile || o.board.Get(n) == tile) {
+			actualNeighbors = append(actualNeighbors, n)
 		}
 	}
 
@@ -138,4 +149,11 @@ func (o *Othello) ApplyMove(playerIndex int, move Move) *OthelloBoard {
 	o.history = append(o.history, move)
 	o.NextPlayer()
 	return o.board
+}
+
+
+func logDebug(fmtString string, args ...interface{}){
+	if debugMode {
+		fmt.Printf(fmtString, args)
+	}
 }
