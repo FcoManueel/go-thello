@@ -151,8 +151,7 @@ func (o *Othello) ApplyMove(playerIndex int, move Move) *OthelloBoard {
 	return o.board
 }
 
-
-func logDebug(fmtString string, args ...interface{}){
+func logDebug(fmtString string, args ...interface{}) {
 	if debugMode {
 		fmt.Printf(fmtString, args)
 	}
